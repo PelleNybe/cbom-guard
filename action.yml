@@ -1,0 +1,111 @@
+name: "cbom-guard PQC Scanner & CBOM Generator"
+description: >
+  Scan source code and X.509 certificates for Post-Quantum Cryptography (PQC) readiness,
+  export CycloneDX 1.6 CBOM and SARIF 2.1.0, and post hybrid-PQC PR remediation comments.
+author: "Corax CoLAB"
+branding:
+  icon: "shield"
+  color: "purple"
+
+inputs:
+  path:
+    description: "Target file or directory to scan"
+    required: false
+    default: "."
+  fail-on:
+    description: "Fail threshold: critical | warning | none"
+    required: false
+    default: "critical"
+  cbom-output:
+    description: "Output path for CycloneDX 1.6 CBOM JSON"
+    required: false
+    default: "cbom.json"
+  sarif-output:
+    description: "Output path for SARIF 2.1.0 report"
+    required: false
+    default: "cbom-guard.sarif"
+  comment-pr:
+    description: "Post inline hybrid-PQC remediation comments on Pull Requests"
+    required: false
+    default: "true"
+  upload-sarif:
+    description: "Upload SARIF report to GitHub Code Scanning (Security tab)"
+    required: false
+    default: "true"
+  github-token:
+    description: "GitHub token for PR commenting"
+    required: false
+    default: "${{ github.token }}"
+
+outputs:
+  cbom-path:
+    description: "Path to generated CycloneDX 1.6 CBOM JSON"
+    value: ${{ inputs.cbom-output }}
+  sarif-path:
+    description: "Path to generated SARIF 2.1.0 report"
+    value: ${{ inputs.sarif-output }}
+  critical-count:
+    description: "Number of Critical (Shor-vulnerable) findings"
+    value: ${{ steps.run-scan.outputs.critical-count }}
+  warning-count:
+    description: "Number of Warning (Grover / legacy) findings"
+    value: ${{ steps.run-scan.outputs.warning-count }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install cbom-guard
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install "${{ github.action_path }}"
+
+    - name: Run cbom-guard scan
+      id: run-scan
+      shell: bash
+      run: |
+        set +e
+        cbom-guard scan "${{ inputs.path }}" \
+          --cbom-out "${{ inputs.cbom-output }}" \
+          --sarif-out "${{ inputs.sarif-output }}" \
+          --fail-on "${{ inputs.fail-on }}"
+        SCAN_EXIT=$?
+        set -e
+
+        CRIT=$(python -c "import json; d=json.load(open('${{ inputs.cbom-output }}')); print(sum(1 for v in d.get('vulnerabilities', []) for r in v.get('ratings', []) if r.get('severity') == 'critical'))")
+        WARN=$(python -c "import json; d=json.load(open('${{ inputs.cbom-output }}')); print(sum(1 for v in d.get('vulnerabilities', []) for r in v.get('ratings', []) if r.get('severity') == 'medium'))")
+        echo "critical-count=${CRIT}" >> "$GITHUB_OUTPUT"
+        echo "warning-count=${WARN}" >> "$GITHUB_OUTPUT"
+        echo "scan-exit=${SCAN_EXIT}" >> "$GITHUB_OUTPUT"
+
+    - name: Comment on Pull Request
+      if: ${{ github.event_name == 'pull_request' && inputs.comment-pr == 'true' }}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        cbom-guard pr-comment "${{ inputs.path }}" \
+          --repo "${{ github.repository }}" \
+          --pr "${{ github.event.pull_request.number }}"
+
+    - name: Upload CycloneDX 1.6 CBOM Artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cbom-guard-bom
+        path: ${{ inputs.cbom-output }}
+
+    - name: Upload SARIF to GitHub Security
+      if: ${{ always() && inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-output }}
+
+    - name: Enforce fail-on threshold
+      shell: bash
+      run: exit "${{ steps.run-scan.outputs.scan-exit }}"

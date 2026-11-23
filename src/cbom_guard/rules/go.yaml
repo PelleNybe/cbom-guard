@@ -1,0 +1,148 @@
+rules:
+  - id: GO-CRYPTO-001
+    name: RSA Key Generation (Go crypto/rsa)
+    language: go
+    library: crypto/rsa
+    algorithm: RSA
+    primitive: pke
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      rsa.GenerateKey() creates RSA keys vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - crypto/rsa
+      callees:
+        - crypto/rsa.GenerateKey
+        - crypto/rsa.GenerateMultiPrimeKey
+    remediation:
+      summary: Migrate key exchange to crypto/mlkem (Go 1.24+ ML-KEM-768) or hybrid X25519MLKEM768.
+      hybrid_pqc_target: crypto/mlkem (ML-KEM-768)
+      code_example: |
+        dk, err := mlkem.GenerateKey768()
+
+  - id: GO-CRYPTO-002
+    name: ECDSA Key Generation (Go crypto/ecdsa)
+    language: go
+    library: crypto/ecdsa
+    algorithm: ECDSA
+    primitive: signature
+    parameter_set: "P-256"
+    classical_security_level: 128
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen", "sign"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      ecdsa.GenerateKey() relies on ECDLP and is vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - crypto/ecdsa
+      callees:
+        - crypto/ecdsa.GenerateKey
+    remediation:
+      summary: Plan migration to ML-DSA-65 (FIPS 204) via circl or Go PQC packages.
+      hybrid_pqc_target: ML-DSA-65 (FIPS 204)
+      code_example: |
+        // Use cloudflare/circl/sign/mldsa/mldsa65
+        pk, sk, err := mldsa65.GenerateKey(rand.Reader)
+
+  - id: GO-CRYPTO-003
+    name: ECDH / Ed25519 Key Generation (Go)
+    language: go
+    library: crypto/ecdh
+    algorithm: ECDH/Ed25519
+    primitive: key-agreement
+    parameter_set: "25519"
+    classical_security_level: 128
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen", "keyderive"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      Standalone crypto/ecdh and crypto/ed25519 keys are vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - crypto/ecdh
+        - crypto/ed25519
+      callees:
+        - crypto/ed25519.GenerateKey
+        - P256.GenerateKey
+        - X25519.GenerateKey
+    remediation:
+      summary: Pair X25519 with ML-KEM-768 using Go 1.24+ crypto/tls X25519MLKEM768 or crypto/mlkem.
+      hybrid_pqc_target: X25519MLKEM768
+      code_example: |
+        dk, err := mlkem.GenerateKey768()
+
+  - id: GO-CRYPTO-004
+    name: Weak MD5 / SHA-1 Hash (Go)
+    language: go
+    library: crypto/md5
+    algorithm: MD5/SHA-1
+    primitive: hash
+    parameter_set: "128/160"
+    classical_security_level: 64
+    nist_quantum_security_level: 0
+    crypto_functions: ["digest"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-328
+    nist_pqc_status: disallowed
+    description: >
+      crypto/md5 and crypto/sha1 are classically collision-broken and weakened by Grover's algorithm.
+    match:
+      imports:
+        - crypto/md5
+        - crypto/sha1
+      callees:
+        - crypto/md5.New
+        - crypto/md5.Sum
+        - crypto/sha1.New
+        - crypto/sha1.Sum
+    remediation:
+      summary: Upgrade to crypto/sha512 (SHA-384 / SHA-512) or golang.org/x/crypto/sha3.
+      hybrid_pqc_target: SHA-384 / SHA-512
+      code_example: |
+        h := sha512.New384()
+
+  - id: GO-CRYPTO-005
+    name: Legacy DES / 3DES / RC4 Cipher (Go)
+    language: go
+    library: crypto/des
+    algorithm: DES/3DES/RC4
+    primitive: block-cipher
+    parameter_set: "56/168"
+    classical_security_level: 56
+    nist_quantum_security_level: 0
+    crypto_functions: ["encrypt", "decrypt"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-327
+    nist_pqc_status: disallowed
+    description: >
+      crypto/des and crypto/rc4 are classically broken and further weakened by Grover's algorithm.
+    match:
+      imports:
+        - crypto/des
+        - crypto/rc4
+      callees:
+        - crypto/des.NewCipher
+        - crypto/des.NewTripleDESCipher
+        - crypto/rc4.NewCipher
+    remediation:
+      summary: Replace with crypto/aes (256-bit key) + crypto/cipher.NewGCM.
+      hybrid_pqc_target: AES-256-GCM
+      code_example: |
+        block, err := aes.NewCipher(key256)
+        aead, err := cipher.NewGCM(block)

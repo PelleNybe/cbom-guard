@@ -1,0 +1,138 @@
+rules:
+  - id: JS-CRYPTO-001
+    name: Asymmetric Key Generation RSA/EC/DSA (Node crypto)
+    language: javascript
+    library: node:crypto
+    algorithm: RSA/EC
+    primitive: pke
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      Node.js crypto.generateKeyPair / generateKeyPairSync with RSA, EC, or DSA is vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - crypto
+        - node:crypto
+      callees:
+        - crypto.generateKeyPair
+        - crypto.generateKeyPairSync
+        - node:crypto.generateKeyPair
+        - node:crypto.generateKeyPairSync
+        - generateKeyPair
+        - generateKeyPairSync
+      arg_constraints:
+        - param: 0
+          op: in
+          value: ["rsa", "rsa-pss", "ec", "dsa", "ed25519", "x25519"]
+    remediation:
+      summary: Migrate key encapsulation to ML-KEM-768 (@noble/post-quantum) and signatures to ML-DSA-65.
+      hybrid_pqc_target: ML-KEM-768 / ML-DSA-65
+      code_example: |
+        import { ml_kem768 } from "@noble/post-quantum/ml-kem";
+        const { publicKey, secretKey } = ml_kem768.keygen();
+
+  - id: JS-CRYPTO-002
+    name: Weak Hash MD5 / SHA-1 (Node crypto)
+    language: javascript
+    library: node:crypto
+    algorithm: MD5/SHA-1
+    primitive: hash
+    parameter_set: "128/160"
+    classical_security_level: 64
+    nist_quantum_security_level: 0
+    crypto_functions: ["digest"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-328
+    nist_pqc_status: disallowed
+    description: >
+      crypto.createHash('md5') and crypto.createHash('sha1') use classically broken hashes weakened by Grover's algorithm.
+    match:
+      imports:
+        - crypto
+        - node:crypto
+      callees:
+        - crypto.createHash
+        - node:crypto.createHash
+        - createHash
+      arg_constraints:
+        - param: 0
+          op: in
+          value: ["md5", "MD5", "sha1", "SHA1"]
+    remediation:
+      summary: Upgrade to sha384 or sha512.
+      hybrid_pqc_target: SHA-384 / SHA-512
+      code_example: |
+        const digest = crypto.createHash("sha384").update(data).digest("hex");
+
+  - id: JS-CRYPTO-003
+    name: Legacy DES / 3DES / RC4 Cipher (Node crypto)
+    language: javascript
+    library: node:crypto
+    algorithm: DES/3DES/RC4
+    primitive: block-cipher
+    parameter_set: "56/168"
+    classical_security_level: 56
+    nist_quantum_security_level: 0
+    crypto_functions: ["encrypt", "decrypt"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-327
+    nist_pqc_status: disallowed
+    description: >
+      createCipheriv with DES, 3DES (des-ede3), or RC4 is classically weak and degraded by Grover's algorithm.
+    match:
+      imports:
+        - crypto
+        - node:crypto
+      callees:
+        - crypto.createCipheriv
+        - node:crypto.createCipheriv
+        - createCipheriv
+      arg_constraints:
+        - param: 0
+          op: in
+          value: ["des", "des-cbc", "des-ecb", "des-ede3", "des-ede3-cbc", "rc4"]
+    remediation:
+      summary: Replace with aes-256-gcm.
+      hybrid_pqc_target: AES-256-GCM
+      code_example: |
+        const cipher = crypto.createCipheriv("aes-256-gcm", key32Bytes, iv12Bytes);
+
+  - id: JS-JWT-001
+    name: Classical Asymmetric JWT Signing (jsonwebtoken)
+    language: javascript
+    library: jsonwebtoken
+    algorithm: RS256/ES256
+    primitive: signature
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["sign"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      jsonwebtoken signing with RS256/ES256/PS256 relies on RSA or ECDSA, both vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - jsonwebtoken
+      callees:
+        - jsonwebtoken.sign
+        - jwt.sign
+      arg_constraints:
+        - param: algorithm
+          op: in
+          value: ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "PS256"]
+    remediation:
+      summary: Plan migration to ML-DSA-65 JOSE/JWT tokens or hybrid signature schemes.
+      hybrid_pqc_target: ML-DSA-65 (COSE/JOSE PQC)
+      code_example: |
+        // Use PQC-capable token signing (ML-DSA-65) when JOSE PQC profiles are adopted

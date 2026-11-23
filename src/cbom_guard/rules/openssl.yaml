@@ -1,0 +1,217 @@
+rules:
+  - id: C-OPENSSL-001
+    name: OpenSSL RSA Key Generation (C)
+    language: c
+    library: openssl
+    algorithm: RSA
+    primitive: pke
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      OpenSSL RSA key generation (RSA_generate_key_ex / EVP_RSA_gen) is vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - openssl/rsa.h
+        - openssl/evp.h
+      callees:
+        - RSA_generate_key_ex
+        - RSA_generate_key
+        - EVP_RSA_gen
+    remediation:
+      summary: Migrate to ML-KEM-768 or ML-DSA-65 via OpenSSL 3.5+ / oqs-provider (liboqs).
+      hybrid_pqc_target: X25519MLKEM768 / ML-DSA-65
+      code_example: |
+        EVP_PKEY *pkey = EVP_PKEY_Q_keygen(NULL, NULL, "ML-DSA-65");
+
+  - id: C-OPENSSL-002
+    name: OpenSSL Elliptic Curve Key Generation (C)
+    language: c
+    library: openssl
+    algorithm: ECDSA
+    primitive: signature
+    parameter_set: "P-256"
+    classical_security_level: 128
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      OpenSSL EC key generation (EC_KEY_generate_key / EVP_EC_gen) relies on ECDLP and is broken by Shor's algorithm.
+    match:
+      imports:
+        - openssl/ec.h
+        - openssl/evp.h
+      callees:
+        - EC_KEY_generate_key
+        - EC_KEY_new_by_curve_name
+        - EVP_EC_gen
+    remediation:
+      summary: Migrate ECDSA/ECDH to ML-DSA-65 or hybrid X25519MLKEM768 via oqs-provider.
+      hybrid_pqc_target: X25519MLKEM768 / ML-DSA-65
+      code_example: |
+        EVP_PKEY *kem = EVP_PKEY_Q_keygen(NULL, NULL, "ML-KEM-768");
+
+  - id: C-OPENSSL-003
+    name: OpenSSL Weak Hash MD5 / SHA-1 (C)
+    language: c
+    library: openssl
+    algorithm: MD5/SHA-1
+    primitive: hash
+    parameter_set: "128/160"
+    classical_security_level: 64
+    nist_quantum_security_level: 0
+    crypto_functions: ["digest"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-328
+    nist_pqc_status: disallowed
+    description: >
+      EVP_md5(), EVP_sha1(), MD5(), and SHA1() are classically broken and weakened by Grover's algorithm.
+    match:
+      imports:
+        - openssl/evp.h
+        - openssl/md5.h
+        - openssl/sha.h
+      callees:
+        - EVP_md5
+        - EVP_sha1
+        - MD5
+        - SHA1
+        - MD5_Init
+        - SHA1_Init
+    remediation:
+      summary: Upgrade to EVP_sha384() or EVP_sha512() (CNSA 2.0 compliant).
+      hybrid_pqc_target: SHA-384 / SHA-512
+      code_example: |
+        const EVP_MD *md = EVP_sha384();
+
+  - id: C-OPENSSL-004
+    name: OpenSSL Legacy DES / 3DES / RC4 Ciphers (C)
+    language: c
+    library: openssl
+    algorithm: DES/3DES/RC4
+    primitive: block-cipher
+    parameter_set: "56/168"
+    classical_security_level: 56
+    nist_quantum_security_level: 0
+    crypto_functions: ["encrypt", "decrypt"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-327
+    nist_pqc_status: disallowed
+    description: >
+      OpenSSL DES, 3DES, and RC4 ciphers are classically deprecated and weakened by Grover's algorithm.
+    match:
+      imports:
+        - openssl/evp.h
+        - openssl/des.h
+      callees:
+        - EVP_des_cbc
+        - EVP_des_ede3_cbc
+        - EVP_rc4
+        - DES_cbc_encrypt
+    remediation:
+      summary: Replace with EVP_aes_256_gcm().
+      hybrid_pqc_target: AES-256-GCM
+      code_example: |
+        const EVP_CIPHER *cipher = EVP_aes_256_gcm();
+
+  - id: CPP-OPENSSL-001
+    name: OpenSSL RSA / EC Key Generation (C++)
+    language: cpp
+    library: openssl
+    algorithm: RSA/ECDSA
+    primitive: pke
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      OpenSSL RSA/EC key generation in C++ is vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - openssl/rsa.h
+        - openssl/ec.h
+        - openssl/evp.h
+      callees:
+        - RSA_generate_key_ex
+        - EVP_RSA_gen
+        - EVP_EC_gen
+        - EC_KEY_generate_key
+    remediation:
+      summary: Migrate to liboqs-cpp (OQS::KeyEncapsulation("ML-KEM-768") / OQS::Signature("ML-DSA-65")).
+      hybrid_pqc_target: ML-KEM-768 / ML-DSA-65
+      code_example: |
+        oqs::KeyEncapsulation kem{"ML-KEM-768"};
+        auto pub = kem.generate_keypair();
+
+  - id: CPP-OPENSSL-002
+    name: OpenSSL Weak Hash MD5 / SHA-1 (C++)
+    language: cpp
+    library: openssl
+    algorithm: MD5/SHA-1
+    primitive: hash
+    parameter_set: "128/160"
+    classical_security_level: 64
+    nist_quantum_security_level: 0
+    crypto_functions: ["digest"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-328
+    nist_pqc_status: disallowed
+    description: >
+      EVP_md5() and EVP_sha1() are classically broken and weakened by Grover's algorithm.
+    match:
+      imports:
+        - openssl/evp.h
+        - openssl/md5.h
+        - openssl/sha.h
+      callees:
+        - EVP_md5
+        - EVP_sha1
+        - MD5
+        - SHA1
+    remediation:
+      summary: Replace with EVP_sha384() or EVP_sha512().
+      hybrid_pqc_target: SHA-384 / SHA-512
+      code_example: |
+        const EVP_MD *md = EVP_sha384();
+
+  - id: C-OPENSSL-SAFE-001
+    name: OpenSSL AES-256-GCM Cipher (C)
+    language: c
+    library: openssl
+    algorithm: AES-256-GCM
+    primitive: ae
+    parameter_set: "256"
+    classical_security_level: 256
+    nist_quantum_security_level: 5
+    crypto_functions: ["encrypt", "decrypt"]
+    quantum_vulnerability: none
+    risk_level: info
+    cwe: CWE-327
+    nist_pqc_status: cnsa-2.0-compliant
+    description: >
+      EVP_aes_256_gcm() provides 128-bit post-quantum security against Grover's algorithm.
+    match:
+      imports:
+        - openssl/evp.h
+      callees:
+        - EVP_aes_256_gcm
+    remediation:
+      summary: Compliant with CNSA 2.0.
+      hybrid_pqc_target: AES-256-GCM (CNSA 2.0)
+      code_example: |
+        const EVP_CIPHER *cipher = EVP_aes_256_gcm();

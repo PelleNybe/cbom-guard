@@ -1,0 +1,579 @@
+rules:
+  - id: PY-CRYPTO-001
+    name: RSA Key Generation (cryptography)
+    language: python
+    library: cryptography
+    algorithm: RSA
+    primitive: pke
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      RSA key generation relies on integer factorization, which is broken in polynomial time
+      by Shor's algorithm on a cryptographically relevant quantum computer.
+    match:
+      imports:
+        - cryptography.hazmat.primitives.asymmetric.rsa
+      callees:
+        - cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key
+        - rsa.generate_private_key
+    remediation:
+      summary: Migrate key encapsulation to ML-KEM-768 (FIPS 203) or hybrid X25519 + ML-KEM-768, and signatures to ML-DSA-65 (FIPS 204).
+      hybrid_pqc_target: X25519 + ML-KEM-768 / ML-DSA-65
+      code_example: |
+        # Replace RSA key exchange with hybrid X25519 + ML-KEM-768 via liboqs-python
+        import oqs
+        with oqs.KeyEncapsulation("ML-KEM-768") as kem:
+            public_key = kem.generate_keypair()
+
+  - id: PY-CRYPTO-002
+    name: Weak RSA Key Size (< 2048 bits)
+    language: python
+    library: cryptography
+    algorithm: RSA
+    primitive: pke
+    parameter_set: "1024"
+    classical_security_level: 80
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-326
+    nist_pqc_status: disallowed
+    description: >
+      RSA key sizes below 2048 bits are both classically insecure (factorable today) and
+      completely broken by Shor's algorithm.
+    match:
+      imports:
+        - cryptography.hazmat.primitives.asymmetric.rsa
+      callees:
+        - cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key
+        - rsa.generate_private_key
+      arg_constraints:
+        - param: key_size
+          op: lt
+          value: 2048
+    remediation:
+      summary: Immediately discontinue RSA < 2048 bits and migrate to ML-KEM-768 (FIPS 203) or ML-DSA-65 (FIPS 204).
+      hybrid_pqc_target: ML-KEM-768 / ML-DSA-65
+      code_example: |
+        import oqs
+        with oqs.Signature("ML-DSA-65") as signer:
+            public_key = signer.generate_keypair()
+
+  - id: PY-CRYPTO-003
+    name: Elliptic Curve (ECC/ECDSA/ECDH) Key Generation (cryptography)
+    language: python
+    library: cryptography
+    algorithm: ECDSA
+    primitive: signature
+    parameter_set: "P-256"
+    classical_security_level: 128
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen", "sign", "keyderive"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      Elliptic-curve cryptography (ECDSA/ECDH) relies on the elliptic curve discrete logarithm
+      problem (ECDLP), which is solved in polynomial time by Shor's algorithm.
+    match:
+      imports:
+        - cryptography.hazmat.primitives.asymmetric.ec
+      callees:
+        - cryptography.hazmat.primitives.asymmetric.ec.generate_private_key
+        - ec.generate_private_key
+    remediation:
+      summary: Migrate ECDSA signatures to ML-DSA-65 (FIPS 204) and ECDH key exchange to hybrid X25519 + ML-KEM-768 (FIPS 203).
+      hybrid_pqc_target: X25519 + ML-KEM-768 / ML-DSA-65
+      code_example: |
+        import oqs
+        with oqs.Signature("ML-DSA-65") as signer:
+            pub = signer.generate_keypair()
+            sig = signer.sign(b"payload")
+
+  - id: PY-CRYPTO-004
+    name: DSA Key Generation (cryptography)
+    language: python
+    library: cryptography
+    algorithm: DSA
+    primitive: signature
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen", "sign"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: disallowed
+    description: >
+      DSA is disallowed by NIST SP 800-131A Rev. 2 and vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - cryptography.hazmat.primitives.asymmetric.dsa
+      callees:
+        - cryptography.hazmat.primitives.asymmetric.dsa.generate_private_key
+        - dsa.generate_private_key
+    remediation:
+      summary: Replace DSA with ML-DSA-65 (FIPS 204) or SLH-DSA (FIPS 205).
+      hybrid_pqc_target: ML-DSA-65 (FIPS 204)
+      code_example: |
+        import oqs
+        with oqs.Signature("ML-DSA-65") as signer:
+            pub = signer.generate_keypair()
+
+  - id: PY-CRYPTO-005
+    name: Diffie-Hellman Parameter/Key Generation (cryptography)
+    language: python
+    library: cryptography
+    algorithm: DH
+    primitive: key-agreement
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen", "keyderive"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      Finite-field Diffie-Hellman key exchange is vulnerable to Shor's algorithm and Harvest-Now-Decrypt-Later attacks.
+    match:
+      imports:
+        - cryptography.hazmat.primitives.asymmetric.dh
+      callees:
+        - cryptography.hazmat.primitives.asymmetric.dh.generate_parameters
+        - dh.generate_parameters
+    remediation:
+      summary: Replace DH key agreement with hybrid X25519 + ML-KEM-768 (FIPS 203).
+      hybrid_pqc_target: X25519 + ML-KEM-768
+      code_example: |
+        import oqs
+        with oqs.KeyEncapsulation("ML-KEM-768") as kem:
+            pk = kem.generate_keypair()
+            ct, ss = kem.encap_secret(pk)
+
+  - id: PY-CRYPTO-006
+    name: Ed25519 / X25519 Asymmetric Key Generation (cryptography)
+    language: python
+    library: cryptography
+    algorithm: Curve25519
+    primitive: key-agreement
+    parameter_set: "25519"
+    classical_security_level: 128
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      Standalone Ed25519 and X25519 rely on Curve25519 ECDLP and are vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - cryptography.hazmat.primitives.asymmetric.ed25519
+        - cryptography.hazmat.primitives.asymmetric.x25519
+      callees:
+        - cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey.generate
+        - cryptography.hazmat.primitives.asymmetric.x25519.X25519PrivateKey.generate
+        - Ed25519PrivateKey.generate
+        - X25519PrivateKey.generate
+    remediation:
+      summary: Pair X25519 with ML-KEM-768 in hybrid key exchange, or migrate Ed25519 signatures to ML-DSA-65.
+      hybrid_pqc_target: X25519 + ML-KEM-768 / ML-DSA-65
+      code_example: |
+        # Use hybrid X25519 + ML-KEM-768 for post-quantum key agreement
+        import oqs
+        with oqs.KeyEncapsulation("ML-KEM-768") as kem:
+            pk = kem.generate_keypair()
+
+  - id: PY-CRYPTO-007
+    name: TripleDES (3DES) Cipher Usage (cryptography)
+    language: python
+    library: cryptography
+    algorithm: 3DES
+    primitive: block-cipher
+    parameter_set: "168"
+    classical_security_level: 112
+    nist_quantum_security_level: 1
+    crypto_functions: ["encrypt", "decrypt"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-327
+    nist_pqc_status: disallowed
+    description: >
+      TripleDES (3DES) is deprecated by NIST and suffers from Sweet32 (64-bit block) as well
+      as Grover's algorithm halving its effective symmetric security.
+    match:
+      imports:
+        - cryptography.hazmat.primitives.ciphers.algorithms
+        - cryptography.hazmat.decrepit.ciphers.algorithms
+      callees:
+        - cryptography.hazmat.primitives.ciphers.algorithms.TripleDES
+        - cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES
+        - algorithms.TripleDES
+        - TripleDES
+    remediation:
+      summary: Replace 3DES with AES-256-GCM (CNSA 2.0 compliant, 128-bit post-quantum security against Grover).
+      hybrid_pqc_target: AES-256-GCM
+      code_example: |
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        key = AESGCM.generate_key(bit_length=256)
+        aesgcm = AESGCM(key)
+
+  - id: PY-CRYPTO-008
+    name: Weak Hash MD5 / SHA-1 (cryptography.hazmat.primitives.hashes)
+    language: python
+    library: cryptography
+    algorithm: MD5/SHA-1
+    primitive: hash
+    parameter_set: "128/160"
+    classical_security_level: 64
+    nist_quantum_security_level: 0
+    crypto_functions: ["digest"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-328
+    nist_pqc_status: disallowed
+    description: >
+      MD5 and SHA-1 are classically collision-broken and further weakened by Grover's algorithm.
+    match:
+      imports:
+        - cryptography.hazmat.primitives.hashes
+      callees:
+        - cryptography.hazmat.primitives.hashes.MD5
+        - cryptography.hazmat.primitives.hashes.SHA1
+        - hashes.MD5
+        - hashes.SHA1
+    remediation:
+      summary: Upgrade to SHA-384 or SHA-512 (CNSA 2.0) or SHA-3-256/384 for quantum-resilient hashing.
+      hybrid_pqc_target: SHA-384 / SHA-512
+      code_example: |
+        from cryptography.hazmat.primitives import hashes
+        digest = hashes.Hash(hashes.SHA384())
+
+  - id: PY-HASH-001
+    name: MD5 Hash Usage (hashlib)
+    language: python
+    library: hashlib
+    algorithm: MD5
+    primitive: hash
+    parameter_set: "128"
+    classical_security_level: 64
+    nist_quantum_security_level: 0
+    crypto_functions: ["digest"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-328
+    nist_pqc_status: disallowed
+    description: >
+      hashlib.md5() produces a 128-bit digest that is classically collision-broken and reduced
+      to 64-bit preimage resistance under Grover's algorithm.
+    match:
+      imports:
+        - hashlib
+      callees:
+        - hashlib.md5
+    remediation:
+      summary: Replace hashlib.md5() with hashlib.sha384() or hashlib.sha512() for cryptographic integrity.
+      hybrid_pqc_target: SHA-384 / SHA-512
+      code_example: |
+        import hashlib
+        digest = hashlib.sha384(data).hexdigest()
+
+  - id: PY-HASH-002
+    name: SHA-1 Hash Usage (hashlib)
+    language: python
+    library: hashlib
+    algorithm: SHA-1
+    primitive: hash
+    parameter_set: "160"
+    classical_security_level: 80
+    nist_quantum_security_level: 0
+    crypto_functions: ["digest"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-328
+    nist_pqc_status: disallowed
+    description: >
+      hashlib.sha1() is classically collision-broken (SHAttered) and weakened by Grover's algorithm.
+    match:
+      imports:
+        - hashlib
+      callees:
+        - hashlib.sha1
+    remediation:
+      summary: Replace hashlib.sha1() with hashlib.sha384() or hashlib.sha3_384().
+      hybrid_pqc_target: SHA-384 / SHA3-384
+      code_example: |
+        import hashlib
+        digest = hashlib.sha384(data).hexdigest()
+
+  - id: PY-HASH-003
+    name: Dynamic Weak Hash via hashlib.new()
+    language: python
+    library: hashlib
+    algorithm: MD5/SHA-1
+    primitive: hash
+    parameter_set: "128/160"
+    classical_security_level: 64
+    nist_quantum_security_level: 0
+    crypto_functions: ["digest"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-328
+    nist_pqc_status: disallowed
+    description: >
+      hashlib.new() invoked with 'md5' or 'sha1' selects a broken hash algorithm.
+    match:
+      imports:
+        - hashlib
+      callees:
+        - hashlib.new
+      arg_constraints:
+        - param: 0
+          op: in
+          value: ["md5", "MD5", "sha1", "SHA1", "sha-1", "SHA-1"]
+    remediation:
+      summary: Pass 'sha384' or 'sha512' to hashlib.new(), or use hashlib.sha384() directly.
+      hybrid_pqc_target: SHA-384 / SHA-512
+      code_example: |
+        import hashlib
+        h = hashlib.new("sha384", data)
+
+  - id: PY-PYCRYPTO-001
+    name: RSA Key Generation (PyCryptodome)
+    language: python
+    library: PyCryptodome
+    algorithm: RSA
+    primitive: pke
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      PyCryptodome RSA.generate() creates RSA keys vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - Crypto.PublicKey.RSA
+        - Cryptodome.PublicKey.RSA
+      callees:
+        - Crypto.PublicKey.RSA.generate
+        - Cryptodome.PublicKey.RSA.generate
+        - RSA.generate
+    remediation:
+      summary: Migrate RSA key generation to ML-KEM-768 (FIPS 203) or ML-DSA-65 (FIPS 204).
+      hybrid_pqc_target: ML-KEM-768 / ML-DSA-65
+      code_example: |
+        import oqs
+        with oqs.KeyEncapsulation("ML-KEM-768") as kem:
+            public_key = kem.generate_keypair()
+
+  - id: PY-PYCRYPTO-002
+    name: ECC / DSA Key Generation (PyCryptodome)
+    language: python
+    library: PyCryptodome
+    algorithm: ECC/DSA
+    primitive: signature
+    parameter_set: "P-256"
+    classical_security_level: 128
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      PyCryptodome ECC.generate() and DSA.generate() create keys vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - Crypto.PublicKey.ECC
+        - Crypto.PublicKey.DSA
+        - Cryptodome.PublicKey.ECC
+        - Cryptodome.PublicKey.DSA
+      callees:
+        - Crypto.PublicKey.ECC.generate
+        - Crypto.PublicKey.DSA.generate
+        - Cryptodome.PublicKey.ECC.generate
+        - Cryptodome.PublicKey.DSA.generate
+        - ECC.generate
+        - DSA.generate
+    remediation:
+      summary: Migrate ECC/DSA keys to ML-DSA-65 (FIPS 204).
+      hybrid_pqc_target: ML-DSA-65 (FIPS 204)
+      code_example: |
+        import oqs
+        with oqs.Signature("ML-DSA-65") as signer:
+            public_key = signer.generate_keypair()
+
+  - id: PY-PYCRYPTO-003
+    name: Legacy Symmetric Cipher DES/3DES/RC4 (PyCryptodome)
+    language: python
+    library: PyCryptodome
+    algorithm: DES/3DES/RC4
+    primitive: block-cipher
+    parameter_set: "56/168"
+    classical_security_level: 56
+    nist_quantum_security_level: 0
+    crypto_functions: ["encrypt", "decrypt"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-327
+    nist_pqc_status: disallowed
+    description: >
+      DES, 3DES, and ARC4 (RC4) are classically weak and further degraded by Grover's algorithm.
+    match:
+      imports:
+        - Crypto.Cipher.DES
+        - Crypto.Cipher.DES3
+        - Crypto.Cipher.ARC4
+        - Cryptodome.Cipher.DES
+        - Cryptodome.Cipher.DES3
+        - Cryptodome.Cipher.ARC4
+      callees:
+        - Crypto.Cipher.DES.new
+        - Crypto.Cipher.DES3.new
+        - Crypto.Cipher.ARC4.new
+        - Cryptodome.Cipher.DES.new
+        - Cryptodome.Cipher.DES3.new
+        - Cryptodome.Cipher.ARC4.new
+        - DES.new
+        - DES3.new
+        - ARC4.new
+    remediation:
+      summary: Replace DES/3DES/RC4 with AES-256-GCM.
+      hybrid_pqc_target: AES-256-GCM
+      code_example: |
+        from Crypto.Cipher import AES
+        cipher = AES.new(key_256bit, AES.MODE_GCM)
+
+  - id: PY-RSA-001
+    name: RSA Key Generation (python-rsa)
+    language: python
+    library: rsa
+    algorithm: RSA
+    primitive: pke
+    parameter_set: "2048"
+    classical_security_level: 112
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      The python-rsa library (rsa.newkeys) generates RSA keys vulnerable to Shor's algorithm and PKCS#1 v1.5 timing attacks.
+    match:
+      imports:
+        - rsa
+      callees:
+        - rsa.newkeys
+    remediation:
+      summary: Replace python-rsa with ML-KEM-768 (FIPS 203) or ML-DSA-65 (FIPS 204).
+      hybrid_pqc_target: ML-KEM-768 / ML-DSA-65
+      code_example: |
+        import oqs
+        with oqs.KeyEncapsulation("ML-KEM-768") as kem:
+            public_key = kem.generate_keypair()
+
+  - id: PY-ECDSA-001
+    name: ECDSA SigningKey Generation (python-ecdsa)
+    language: python
+    library: ecdsa
+    algorithm: ECDSA
+    primitive: signature
+    parameter_set: "P-256"
+    classical_security_level: 128
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen", "sign"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      python-ecdsa SigningKey.generate() creates ECDSA keys vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - ecdsa
+      callees:
+        - ecdsa.SigningKey.generate
+        - SigningKey.generate
+    remediation:
+      summary: Replace python-ecdsa with ML-DSA-65 (FIPS 204) or hybrid ECDSA + ML-DSA.
+      hybrid_pqc_target: ML-DSA-65 (FIPS 204)
+      code_example: |
+        import oqs
+        with oqs.Signature("ML-DSA-65") as signer:
+            public_key = signer.generate_keypair()
+
+  - id: PY-SSL-001
+    name: Legacy TLS/SSL Protocol Version (ssl)
+    language: python
+    library: ssl
+    algorithm: TLSv1.0/1.1
+    primitive: key-agreement
+    parameter_set: "TLS1.0/1.1"
+    classical_security_level: 80
+    nist_quantum_security_level: 0
+    crypto_functions: ["keyderive"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-326
+    nist_pqc_status: disallowed
+    description: >
+      TLS 1.0/1.1 and SSLv23 protocols do not support post-quantum hybrid key exchange and are classically deprecated.
+    match:
+      imports:
+        - ssl
+      symbols:
+        - ssl.PROTOCOL_TLSv1
+        - ssl.PROTOCOL_TLSv1_1
+        - ssl.PROTOCOL_SSLv23
+        - ssl.TLSVersion.TLSv1
+        - ssl.TLSVersion.TLSv1_1
+    remediation:
+      summary: Enforce TLS 1.3 with hybrid X25519MLKEM768 key exchange support.
+      hybrid_pqc_target: TLS 1.3 + X25519MLKEM768
+      code_example: |
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_3
+
+  - id: PY-SAFE-001
+    name: Quantum-Resilient Symmetric AEAD (AESGCM)
+    language: python
+    library: cryptography
+    algorithm: AES-256-GCM
+    primitive: ae
+    parameter_set: "256"
+    classical_security_level: 256
+    nist_quantum_security_level: 5
+    crypto_functions: ["encrypt", "decrypt"]
+    quantum_vulnerability: none
+    risk_level: info
+    cwe: CWE-327
+    nist_pqc_status: cnsa-2.0-compliant
+    description: >
+      AES-256-GCM provides 128-bit post-quantum security against Grover's algorithm and is CNSA 2.0 compliant.
+    match:
+      imports:
+        - cryptography.hazmat.primitives.ciphers.aead
+      callees:
+        - cryptography.hazmat.primitives.ciphers.aead.AESGCM
+        - AESGCM
+    remediation:
+      summary: Ensure 256-bit keys are used (AESGCM.generate_key(bit_length=256)).
+      hybrid_pqc_target: AES-256-GCM (CNSA 2.0)
+      code_example: |
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        key = AESGCM.generate_key(bit_length=256)
