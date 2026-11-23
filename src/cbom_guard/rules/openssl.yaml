@@ -215,3 +215,34 @@ rules:
       hybrid_pqc_target: AES-256-GCM (CNSA 2.0)
       code_example: |
         const EVP_CIPHER *cipher = EVP_aes_256_gcm();
+
+  - id: C-SODIUM-001
+    name: libsodium Classical Curve25519 Keypair / Signature (C)
+    language: c
+    library: libsodium
+    algorithm: Curve25519
+    primitive: key-agreement
+    parameter_set: "25519"
+    classical_security_level: 128
+    nist_quantum_security_level: 0
+    crypto_functions: ["keygen", "sign"]
+    quantum_vulnerability: shor
+    risk_level: critical
+    cwe: CWE-327
+    nist_pqc_status: deprecated-by-2030
+    description: >
+      libsodium crypto_box_keypair, crypto_sign_keypair, and crypto_scalarmult rely on Curve25519
+      and are vulnerable to Shor's algorithm.
+    match:
+      imports:
+        - sodium.h
+      callees:
+        - crypto_box_keypair
+        - crypto_sign_keypair
+        - crypto_scalarmult
+        - crypto_kx_keypair
+    remediation:
+      summary: Pair X25519 with ML-KEM-768 via liboqs in a hybrid key exchange, or migrate signatures to ML-DSA-65.
+      hybrid_pqc_target: X25519 + ML-KEM-768 / ML-DSA-65
+      code_example: |
+        OQS_KEM *kem = OQS_KEM_new(OQS_KEM_alg_ml_kem_768);

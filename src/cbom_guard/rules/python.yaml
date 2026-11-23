@@ -577,3 +577,35 @@ rules:
       code_example: |
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
         key = AESGCM.generate_key(bit_length=256)
+
+  - id: PY-HASH-004
+    name: Weak PBKDF2-HMAC Hash (MD5 / SHA-1)
+    language: python
+    library: hashlib
+    algorithm: PBKDF2-SHA1/MD5
+    primitive: kdf
+    parameter_set: "160"
+    classical_security_level: 80
+    nist_quantum_security_level: 0
+    crypto_functions: ["keyderive"]
+    quantum_vulnerability: grover
+    risk_level: warning
+    cwe: CWE-328
+    nist_pqc_status: disallowed
+    description: >
+      hashlib.pbkdf2_hmac() configured with 'md5' or 'sha1' relies on a deprecated hash primitive.
+    match:
+      imports:
+        - hashlib
+      callees:
+        - hashlib.pbkdf2_hmac
+      arg_constraints:
+        - param: 0
+          op: in
+          value: ["md5", "MD5", "sha1", "SHA1"]
+    remediation:
+      summary: Use 'sha256', 'sha384', or 'sha512' with hashlib.pbkdf2_hmac(), or migrate to Argon2id.
+      hybrid_pqc_target: PBKDF2-HMAC-SHA512 / Argon2id
+      code_example: |
+        import hashlib
+        dk = hashlib.pbkdf2_hmac("sha512", password, salt, 600_000)

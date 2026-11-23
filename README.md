@@ -2,7 +2,7 @@
 
 # 🛡️ `cbom-guard`
 
-**Automated Post-Quantum Cryptography (PQC) Code Scanner, CycloneDX 1.6 CBOM Generator, SARIF Exporter & GitHub PR Remediation Bot**
+**Automated Post-Quantum Cryptography (PQC) Code Scanner, CycloneDX 1.6 CBOM Generator, SARIF 2.1.0 Exporter & GitHub PR Remediation Bot**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
@@ -11,20 +11,33 @@
 [![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0-orange.svg)](https://sarifweb.oasis-open.org/)
 [![GitHub Action](https://img.shields.io/badge/GitHub%20Action-Ready-2088FF.svg)](action.yml)
 
+*Ship quantum-ready software. Eliminate cryptographic blind spots before "Harvest Now, Decrypt Later" becomes a breach.*
+
 </div>
 
 ---
 
 ## 🚨 Why `cbom-guard`? The Quantum Migration Imperative
 
-**"Harvest Now, Decrypt Later"** is already underway. Adversaries are capturing encrypted traffic today to decrypt it once cryptographically relevant quantum computers (CRQCs) arrive.
+**"Harvest Now, Decrypt Later"** is an active threat today. Adversaries are archiving encrypted traffic and sensitive artifacts now to decrypt them once cryptographically relevant quantum computers (CRQCs) arrive.
 
-Global mandates are locking in hard deadlines:
-- 🇺🇸 **NIST PQC Standards (FIPS 203, 204, 205):** Standardized **ML-KEM** (Kyber), **ML-DSA** (Dilithium), and **SLH-DSA** (SPHINCS+) to replace RSA, ECC, DSA, and DH.
-- 🛡️ **NSA CNSA 2.0:** Requires software, firmware, and networking stacks to transition to quantum-resistant cryptography (AES-256, SHA-384/512, ML-KEM-1024, ML-DSA-87) by **2030**.
-- 🇪🇺 **EU PQC Roadmap:** Calls on Member States and critical infrastructure operators to inventory cryptographic assets via **Cryptographic Bills of Materials (CBOM)** and begin hybrid PQC migration immediately.
+Global compliance mandates are locking in hard deadlines:
 
-Regex-based scanners drown engineering teams in false positives from comments, log strings, and docstrings. **`cbom-guard`** uses **Tree-sitter AST parsing** with full import/alias resolution and argument-constraint evaluation to pinpoint real cryptographic call sites across **Python, C/C++, Go, JavaScript/TypeScript**, and **X.509 certificates** — then automatically generates **CycloneDX 1.6 CBOMs**, **SARIF 2.1.0** security alerts, and **inline GitHub PR remediation comments**.
+| Standard / Mandate | Scope | Key Deadline & Requirement |
+| :--- | :--- | :--- |
+| 🇺🇸 **NIST PQC (FIPS 203, 204, 205)** | Global / US Federal | Standardized **ML-KEM** (Kyber), **ML-DSA** (Dilithium), and **SLH-DSA** (SPHINCS+) to replace RSA, ECC, DSA, and DH. |
+| 🛡️ **NSA CNSA 2.0** | National Security & Critical Infra | Requires AES-256, SHA-384/512, ML-KEM-1024, and ML-DSA-87 across software and networking by **2030**. |
+| 🇪🇺 **EU PQC Roadmap** | EU Member States & NIS2 | Mandates cryptographic inventory via **Cryptographic Bills of Materials (CBOM)** and immediate hybrid PQC migration planning. |
+
+### Why Tree-sitter AST Beats Regex Scanners
+
+| Capability | Legacy Regex Scanners | 🛡️ `cbom-guard` (Tree-sitter AST) |
+| :--- | :--- | :--- |
+| Ignores comments, docstrings & log strings | ❌ High false-positive noise | ✅ Concrete Syntax Tree (CST) node filtering |
+| Resolves import aliases (`import rsa as r`) | ❌ Misses aliased calls | ✅ Per-file symbol table resolution |
+| Evaluates key sizes (`key_size < 2048`) | ❌ Fragile multi-line matching | ✅ Structured argument constraint engine |
+| Inspects X.509 `.pem`/`.crt`/`.cer`/`.der` | ❌ Not supported | ✅ Native `cryptography.x509` inspection |
+| Outputs schema-valid CycloneDX 1.6 CBOM | ❌ Custom JSON only | ✅ Official `JsonStrictValidator` verified |
 
 ---
 
@@ -37,14 +50,14 @@ flowchart LR
     C --> D["📦 CycloneDX 1.6 CBOM<br/>(cbom.json)"]
     C --> E["🔍 SARIF 2.1.0<br/>(GitHub Security Tab)"]
     C --> F["💬 GitHub PR Bot<br/>(Inline Hybrid-PQC Fixes)"]
-    C --> G["🖥️ Rich Terminal CLI<br/>(--fail-on critical|warning|none)"]
+    C --> G["🖥️ Rich Terminal & JSON CLI<br/>(--fail-on critical|warning|none)"]
 ```
 
 ---
 
 ## ⚡ Quickstart
 
-### Install & Run Locally
+### Install
 
 ```bash
 pip install cbom-guard
@@ -52,16 +65,20 @@ pip install cbom-guard
 uv tool install cbom-guard
 ```
 
-Scan a repository, generate a schema-validated CycloneDX 1.6 CBOM, and export SARIF 2.1.0:
+### Scan a Repository
 
 ```bash
+# Interactive terminal table + CycloneDX 1.6 CBOM + SARIF 2.1.0
 cbom-guard scan ./src \
   --cbom-out cbom.json \
   --sarif-out cbom-guard.sarif \
   --fail-on critical
+
+# Machine-readable JSON output for CI pipelines
+cbom-guard scan ./src --json --quiet --fail-on none
 ```
 
-Inspect all loaded PQC detection rules:
+### List All Loaded Detection Rules
 
 ```bash
 cbom-guard list-rules
@@ -69,7 +86,7 @@ cbom-guard list-rules
 
 ---
 
-## 🧩 Interactive Examples & Reference
+## 🧩 Interactive Reference
 
 <details>
 <summary>🚀 <strong>5-Line GitHub Action Workflow</strong> (CBOM Artifacts + Security Tab + Inline PR Comments)</summary>
@@ -135,12 +152,12 @@ jobs:
 </details>
 
 <details>
-<summary>📋 <strong>Supported Languages, Libraries & PQC Rule Matrix (34 Built-in Rules)</strong></summary>
+<summary>📋 <strong>Supported Languages, Libraries & PQC Rule Matrix (36 Built-in Rules)</strong></summary>
 
 | Language / Artifact | Libraries & Standards Covered | Quantum Threats Detected |
 | :--- | :--- | :--- |
-| **Python** (18 rules) | `cryptography`, `hashlib`, `PyCryptodome` (`Crypto.*`/`Cryptodome.*`), `ssl`, `rsa`, `ecdsa` | Shor (RSA, RSA `< 2048`, ECDSA/ECC, DSA, DH, Ed25519/X25519, TLS 1.0/1.1), Grover (3DES, DES, RC4, MD5, SHA-1), Safe (`AES-256-GCM`) |
-| **C / C++** (7 rules) | OpenSSL (`<openssl/evp.h>`, `<openssl/rsa.h>`, `<openssl/ec.h>`, `<openssl/des.h>`) | Shor (`EVP_RSA_gen`, `RSA_generate_key_ex`, `EVP_EC_gen`, `EC_KEY_generate_key`), Grover (`EVP_md5`, `EVP_sha1`, `EVP_des_ede3_cbc`, `EVP_rc4`), Safe (`EVP_aes_256_gcm`) |
+| **Python** (19 rules) | `cryptography`, `hashlib`, `PyCryptodome` (`Crypto.*`/`Cryptodome.*`), `ssl`, `rsa`, `ecdsa` | Shor (RSA, RSA `< 2048`, ECDSA/ECC, DSA, DH, Ed25519/X25519, TLS 1.0/1.1), Grover (3DES, DES, RC4, MD5, SHA-1, PBKDF2-SHA1), Safe (`AES-256-GCM`) |
+| **C / C++** (8 rules) | OpenSSL (`<openssl/evp.h>`, `<openssl/rsa.h>`, `<openssl/ec.h>`, `<openssl/des.h>`), `libsodium` (`<sodium.h>`) | Shor (`EVP_RSA_gen`, `RSA_generate_key_ex`, `EVP_EC_gen`, `EC_KEY_generate_key`, `crypto_box_keypair`, `crypto_sign_keypair`, `crypto_scalarmult`), Grover (`EVP_md5`, `EVP_sha1`, `EVP_des_ede3_cbc`, `EVP_rc4`), Safe (`EVP_aes_256_gcm`) |
 | **Go** (5 rules) | `crypto/rsa`, `crypto/ecdsa`, `crypto/ecdh`, `crypto/ed25519`, `crypto/md5`, `crypto/sha1`, `crypto/des`, `crypto/rc4` | Shor (RSA, ECDSA, ECDH, Ed25519), Grover (MD5, SHA-1, DES, 3DES, RC4) |
 | **JavaScript / TypeScript** (4 rules) | `node:crypto` / `crypto`, `jsonwebtoken` | Shor (`generateKeyPair`/`generateKeyPairSync` RSA/EC/DSA, JWT `RS256`/`ES256`/`PS256`), Grover (`createHash` MD5/SHA-1, `createCipheriv` DES/3DES/RC4) |
 | **X.509 Certificates** | `.pem`, `.crt`, `.cer`, `.der` via `cryptography.x509` | Shor (RSA, ECDSA, DSA, Ed25519, Ed448 public keys), Weak signature hashes (MD5, SHA-1), Expiration tracking |

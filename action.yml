@@ -73,14 +73,10 @@ runs:
         cbom-guard scan "${{ inputs.path }}" \
           --cbom-out "${{ inputs.cbom-output }}" \
           --sarif-out "${{ inputs.sarif-output }}" \
+          --github-output "$GITHUB_OUTPUT" \
           --fail-on "${{ inputs.fail-on }}"
         SCAN_EXIT=$?
         set -e
-
-        CRIT=$(python -c "import json; d=json.load(open('${{ inputs.cbom-output }}')); print(sum(1 for v in d.get('vulnerabilities', []) for r in v.get('ratings', []) if r.get('severity') == 'critical'))")
-        WARN=$(python -c "import json; d=json.load(open('${{ inputs.cbom-output }}')); print(sum(1 for v in d.get('vulnerabilities', []) for r in v.get('ratings', []) if r.get('severity') == 'medium'))")
-        echo "critical-count=${CRIT}" >> "$GITHUB_OUTPUT"
-        echo "warning-count=${WARN}" >> "$GITHUB_OUTPUT"
         echo "scan-exit=${SCAN_EXIT}" >> "$GITHUB_OUTPUT"
 
     - name: Comment on Pull Request

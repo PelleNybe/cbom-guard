@@ -87,3 +87,34 @@ def test_cli_scan_cbom_sarif_and_list_rules(tmp_path: Path) -> None:
     res_rules = runner.invoke(app, ["list-rules", "--language", "python"])
     assert res_rules.exit_code == 0
     assert "PY-CRYPTO-001" in res_rules.stdout
+
+
+def test_cli_version_json_github_output_and_missing_path(tmp_path: Path) -> None:
+    res_ver = runner.invoke(app, ["--version"])
+    assert res_ver.exit_code == 0
+    assert "cbom-guard" in res_ver.stdout
+
+    gh_out = tmp_path / "github_output.txt"
+    res_json = runner.invoke(
+        app,
+        [
+            "scan",
+            str(FIXTURES / "python" / "vulnerable_crypto.py"),
+            "--json",
+            "--quiet",
+            "--github-output",
+            str(gh_out),
+            "--fail-on",
+            "none",
+        ],
+    )
+    assert res_json.exit_code == 0
+    parsed = json.loads(res_json.stdout)
+    assert parsed["files_scanned"] == 1
+    assert len(parsed["findings"]) > 0
+    gh_text = gh_out.read_text(encoding="utf-8")
+    assert "critical-count=" in gh_text
+    assert "warning-count=" in gh_text
+
+    res_missing = runner.invoke(app, ["scan", str(tmp_path / "does_not_exist")])
+    assert res_missing.exit_code == 2

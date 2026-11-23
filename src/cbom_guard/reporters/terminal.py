@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -14,6 +16,17 @@ _RISK_STYLE: dict[RiskLevel, str] = {
     RiskLevel.WARNING: "bold yellow",
     RiskLevel.INFO: "bold cyan",
 }
+
+
+def _display_location(file_path: str, target_path: str) -> str:
+    p = Path(file_path)
+    base = Path(target_path)
+    if base.is_dir():
+        try:
+            return p.resolve().relative_to(base.resolve()).as_posix()
+        except ValueError:
+            pass
+    return p.as_posix()
 
 
 def render_terminal_report(scan_result: ScanResult, console: Console | None = None) -> None:
@@ -45,16 +58,17 @@ def render_terminal_report(scan_result: ScanResult, console: Console | None = No
         return
 
     table = Table(show_header=True, header_style="bold magenta", expand=True)
-    table.add_column("Risk", width=10)
-    table.add_column("Rule ID", width=15)
-    table.add_column("Algorithm", width=16)
-    table.add_column("Threat", width=8)
-    table.add_column("Location", ratio=2)
+    table.add_column("Risk", no_wrap=True)
+    table.add_column("Rule ID", no_wrap=True)
+    table.add_column("Algorithm", no_wrap=True)
+    table.add_column("Threat", no_wrap=True)
+    table.add_column("Location", ratio=2, overflow="fold")
     table.add_column("Hybrid-PQC Target", ratio=2)
 
     for finding in scan_result.findings:
         risk_text = Text(finding.risk_level.value.upper(), style=_RISK_STYLE[finding.risk_level])
-        loc = f"{finding.file_path}:{finding.start_line}:{finding.start_col}"
+        rel_path = _display_location(finding.file_path, scan_result.target_path)
+        loc = f"{rel_path}:{finding.start_line}:{finding.start_col}"
         table.add_row(
             risk_text,
             finding.rule_id,

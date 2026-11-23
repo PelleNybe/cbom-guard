@@ -18,7 +18,7 @@ from cyclonedx.model.crypto import (
     CryptoPrimitive,
     CryptoProperties,
 )
-from cyclonedx.model.tool import Tool
+from cyclonedx.model.tool import ToolRepository
 from cyclonedx.model.vulnerability import (
     BomTarget,
     Vulnerability,
@@ -154,25 +154,31 @@ def _build_component_for_finding(finding: Finding, idx: int) -> tuple[Component,
 
 def generate_cyclonedx_cbom(scan_result: ScanResult) -> str:
     """Serialize a ScanResult into a CycloneDX 1.6 CBOM JSON string."""
+    root_component = Component(
+        name=scan_result.target_path,
+        type=ComponentType.APPLICATION,
+        bom_ref=BomRef("cbom-target-application"),
+    )
     bom = Bom()
     bom.metadata = BomMetaData(
-        tools=[
-            Tool(
-                vendor="Corax CoLAB",
-                name="cbom-guard",
-                version=__version__,
-            )
-        ],
-        component=Component(
-            name=scan_result.target_path,
-            type=ComponentType.APPLICATION,
-            bom_ref=BomRef("cbom-target-application"),
+        tools=ToolRepository(
+            components=[
+                Component(
+                    name="cbom-guard",
+                    version=__version__,
+                    type=ComponentType.APPLICATION,
+                    group="Corax CoLAB",
+                )
+            ]
         ),
+        component=root_component,
     )
 
+    asset_components: list[Component] = []
     for idx, finding in enumerate(scan_result.findings, start=1):
         component, bom_ref = _build_component_for_finding(finding, idx)
         bom.components.add(component)
+        asset_components.append(component)
 
         if finding.risk_level in (RiskLevel.CRITICAL, RiskLevel.WARNING):
             cwe_num: int | None = None
@@ -195,6 +201,7 @@ def generate_cyclonedx_cbom(scan_result: ScanResult) -> str:
             )
             bom.vulnerabilities.add(vuln)
 
+    bom.register_dependency(root_component, asset_components)
     outputter = JsonV1Dot6(bom)
     return outputter.output_as_string(indent=2)
 

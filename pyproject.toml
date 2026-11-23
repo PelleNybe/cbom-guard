@@ -80,9 +80,6 @@ Issues = "https://github.com/CoraxCoLAB/cbom-guard/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["src/cbom_guard"]
 
-[tool.hatch.build.targets.wheel.force-include]
-"src/cbom_guard/rules" = "cbom_guard/rules"
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]

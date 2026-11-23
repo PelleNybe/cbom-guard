@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Multi-language Tree-sitter AST scanner (`python`, `javascript`/`typescript`, `c`, `cpp`, `go`) with import/alias resolution and argument constraint evaluation.
-- 34 built-in YAML detection rules across `python.yaml` (18 rules), `openssl.yaml` (7 rules), `go.yaml` (5 rules), and `javascript.yaml` (4 rules).
+- 36 built-in YAML detection rules across `python.yaml` (19 rules), `openssl.yaml` (8 rules including `libsodium`), `go.yaml` (5 rules), and `javascript.yaml` (4 rules).
 - Real X.509 certificate scanner (`.pem`, `.crt`, `.cer`, `.der`) via `cryptography.x509`.
 - Standards-compliant CycloneDX 1.6 CBOM exporter (`cyclonedx-python-lib`) with strict JSON schema validation.
 - Standards-compliant SARIF 2.1.0 exporter for GitHub Code Scanning.

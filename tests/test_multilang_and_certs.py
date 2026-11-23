@@ -90,3 +90,35 @@ def test_workspace_recursive_scan() -> None:
     assert result.critical_count > 0
     assert result.warning_count > 0
     assert result.info_count > 0
+
+
+def test_all_rule_ids_are_unique() -> None:
+    engine = RuleEngine()
+    ids = [r.id for r in engine.rules]
+    assert len(ids) == len(set(ids)), "Duplicate rule IDs detected!"
+    assert len(ids) >= 36
+
+
+def test_non_cert_pem_file_gracefully_ignored(tmp_path: Path) -> None:
+    fake_pem = tmp_path / "private.pem"
+    fake_pem.write_text("-----BEGIN PRIVATE KEY-----\nMIIBVQ==\n-----END PRIVATE KEY-----\n")
+    assert scan_certificate_file(fake_pem) == []
+
+
+def test_libsodium_and_pbkdf2_rules() -> None:
+    parser = ASTParser()
+    engine = RuleEngine()
+
+    c_parsed = parser.parse_bytes(
+        b'#include <sodium.h>\nvoid f() { unsigned char pk[32], sk[32]; crypto_box_keypair(pk, sk); }\n',
+        path="sodium_test.c",
+        language=Language.C,
+    )
+    assert any(f.rule_id == "C-SODIUM-001" for f in engine.evaluate(c_parsed))
+
+    py_parsed = parser.parse_bytes(
+        b'import hashlib\ndk = hashlib.pbkdf2_hmac("sha1", b"pw", b"salt", 100000)\n',
+        path="kdf_test.py",
+        language=Language.PYTHON,
+    )
+    assert any(f.rule_id == "PY-HASH-004" for f in engine.evaluate(py_parsed))
