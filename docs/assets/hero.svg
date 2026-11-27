@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 220" width="100%" height="220" role="img" aria-label="cbom-guard Post-Quantum Cryptography Scanner Banner">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="50%" stop-color="#161b22"/>
+      <stop offset="100%" stop-color="#1e1435"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a371f7"/>
+      <stop offset="50%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#3fb950"/>
+    </linearGradient>
+    <linearGradient id="scanGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a371f7" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#a371f7" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#a371f7" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="220" rx="16" fill="url(#bgGrad)" stroke="#30363d" stroke-width="1.5"/>
+
+  <!-- Subtle animated quantum grid scanline -->
+  <rect x="0" y="-40" width="900" height="40" fill="url(#scanGrad)">
+    <animate attributeName="y" values="-40;220;-40" dur="6s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Animated shield emblem -->
+  <g transform="translate(56, 52)">
+    <path d="M52 6 L96 24 V58 C96 86 76 106 52 114 C28 106 8 86 8 58 V24 Z"
+          fill="#1f1638" stroke="url(#accentGrad)" stroke-width="3"/>
+    <path d="M36 58 L48 70 L70 44" fill="none" stroke="#3fb950" stroke-width="4.5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="52" cy="58" r="48" fill="none" stroke="#a371f7" stroke-width="1" stroke-opacity="0.45">
+      <animate attributeName="r" values="42;56;42" dur="3.5s" repeatCount="indefinite"/>
+      <animate attributeName="stroke-opacity" values="0.6;0.05;0.6" dur="3.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Title & Tagline -->
+  <text x="190" y="92" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="44" font-weight="800" fill="#ffffff" letter-spacing="-0.5">
+    cbom-guard
+  </text>
+  <rect x="190" y="106" width="520" height="3" rx="1.5" fill="url(#accentGrad)"/>
+
+  <text x="190" y="138" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="17" font-weight="500" fill="#c9d1d9">
+    Post-Quantum Cryptography Scanner • CycloneDX 1.6 CBOM • SARIF 2.1.0 • PR Bot
+  </text>
+  <text x="190" y="168" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+        font-size="13.5" fill="#8b949e">
+    Tree-sitter AST + X.509 Inspection  |  NIST FIPS 203/204/205  |  NSA CNSA 2.0 Ready
+  </text>
+
+  <!-- Animated status pill -->
+  <g transform="translate(728, 32)">
+    <rect width="136" height="28" rx="14" fill="#1b2a1e" stroke="#3fb950" stroke-width="1"/>
+    <circle cx="18" cy="14" r="4.5" fill="#3fb950">
+      <animate attributeName="opacity" values="1;0.35;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="30" y="18.5" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3fb950">
+      PQC GUARD ON
+    </text>
+  </g>
+</svg>

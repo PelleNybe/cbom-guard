@@ -1,17 +1,21 @@
 <div align="center">
 
-# 🛡️ `cbom-guard`
+<img src="docs/assets/hero.svg" alt="cbom-guard — Post-Quantum Cryptography Scanner & CBOM Generator" width="100%"/>
 
-**Automated Post-Quantum Cryptography (PQC) Code Scanner, CycloneDX 1.6 CBOM Generator, SARIF 2.1.0 Exporter & GitHub PR Remediation Bot**
+<br/><br/>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-[![CI Status](https://img.shields.io/badge/CI-passing-brightgreen.svg)](.github/workflows/ci.yml)
-[![CycloneDX 1.6](https://img.shields.io/badge/CycloneDX-1.6%20CBOM-0A66C2.svg)](https://cyclonedx.org/)
-[![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0-orange.svg)](https://sarifweb.oasis-open.org/)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-Ready-2088FF.svg)](action.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![CI Status](https://img.shields.io/badge/CI-Passing-2EA44F.svg?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
+[![CycloneDX 1.6](https://img.shields.io/badge/CycloneDX-1.6%20CBOM-0A66C2.svg?style=for-the-badge)](https://cyclonedx.org/)
+[![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0-EA580C.svg?style=for-the-badge)](https://sarifweb.oasis-open.org/)
+[![Buy Me A Coffee](https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-FFDD00.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/pellenybe)
 
-*Ship quantum-ready software. Eliminate cryptographic blind spots before "Harvest Now, Decrypt Later" becomes a breach.*
+<h3>
+  🛡️ <em>Ship quantum-ready software. Eliminate cryptographic blind spots before "Harvest Now, Decrypt Later" becomes a breach.</em>
+</h3>
+
+[⚡ Quickstart](#-quickstart) • [⚙️ Architecture](#️-how-it-works) • [📋 Rule Matrix](#-interactive-reference) • [📚 Docs](#-documentation) • [🏆 Credits](#-credits--acknowledgments) • [☕ Sponsor](#-support--sponsor)
 
 </div>
 
@@ -29,15 +33,16 @@ Global compliance mandates are locking in hard deadlines:
 | 🛡️ **NSA CNSA 2.0** | National Security & Critical Infra | Requires AES-256, SHA-384/512, ML-KEM-1024, and ML-DSA-87 across software and networking by **2030**. |
 | 🇪🇺 **EU PQC Roadmap** | EU Member States & NIS2 | Mandates cryptographic inventory via **Cryptographic Bills of Materials (CBOM)** and immediate hybrid PQC migration planning. |
 
-### Why Tree-sitter AST Beats Regex Scanners
+### 🌳 Why Tree-sitter AST Beats Regex Scanners
 
 | Capability | Legacy Regex Scanners | 🛡️ `cbom-guard` (Tree-sitter AST) |
 | :--- | :--- | :--- |
-| Ignores comments, docstrings & log strings | ❌ High false-positive noise | ✅ Concrete Syntax Tree (CST) node filtering |
-| Resolves import aliases (`import rsa as r`) | ❌ Misses aliased calls | ✅ Per-file symbol table resolution |
-| Evaluates key sizes (`key_size < 2048`) | ❌ Fragile multi-line matching | ✅ Structured argument constraint engine |
-| Inspects X.509 `.pem`/`.crt`/`.cer`/`.der` | ❌ Not supported | ✅ Native `cryptography.x509` inspection |
-| Outputs schema-valid CycloneDX 1.6 CBOM | ❌ Custom JSON only | ✅ Official `JsonStrictValidator` verified |
+| 🧠 Ignores comments, docstrings & log strings | ❌ High false-positive noise | ✅ Concrete Syntax Tree (CST) node filtering |
+| 🔗 Resolves import aliases (`import rsa as r`) | ❌ Misses aliased calls | ✅ Per-file symbol table resolution |
+| 📐 Evaluates key sizes (`key_size < 2048`) | ❌ Fragile multi-line matching | ✅ Structured argument constraint engine |
+| 📜 Inspects X.509 `.pem`/`.crt`/`.cer`/`.der` | ❌ Not supported | ✅ Native `cryptography.x509` inspection |
+| 📦 Outputs schema-valid CycloneDX 1.6 CBOM | ❌ Custom JSON only | ✅ Official `JsonStrictValidator` verified |
+| 📊 Executive Offline HTML Dashboard | ❌ CLI-only or paid SaaS | ✅ Zero-dependency `--html-out` dark/light UI |
 
 ---
 
@@ -50,14 +55,15 @@ flowchart LR
     C --> D["📦 CycloneDX 1.6 CBOM<br/>(cbom.json)"]
     C --> E["🔍 SARIF 2.1.0<br/>(GitHub Security Tab)"]
     C --> F["💬 GitHub PR Bot<br/>(Inline Hybrid-PQC Fixes)"]
-    C --> G["🖥️ Rich Terminal & JSON CLI<br/>(--fail-on critical|warning|none)"]
+    C --> G["📊 Interactive HTML Dashboard<br/>(--html-out report.html)"]
+    C --> H["🖥️ Rich Terminal & JSON CLI<br/>(--fail-on critical|warning|none)"]
 ```
 
 ---
 
 ## ⚡ Quickstart
 
-### Install
+### 📦 Install
 
 ```bash
 pip install cbom-guard
@@ -65,10 +71,10 @@ pip install cbom-guard
 uv tool install cbom-guard
 ```
 
-### Scan a Repository
+### 🔍 Scan a Repository
 
 ```bash
-# Interactive terminal table + CycloneDX 1.6 CBOM + SARIF 2.1.0 + HTML Dashboard
+# Terminal table + CycloneDX 1.6 CBOM + SARIF 2.1.0 + Offline HTML Dashboard
 cbom-guard scan ./src \
   --cbom-out cbom.json \
   --sarif-out cbom-guard.sarif \
@@ -79,7 +85,7 @@ cbom-guard scan ./src \
 cbom-guard scan ./src --json --quiet --fail-on none
 ```
 
-### List All Loaded Detection Rules
+### 📜 List All Loaded Detection Rules
 
 ```bash
 cbom-guard list-rules
@@ -153,15 +159,26 @@ jobs:
 </details>
 
 <details>
+<summary>📊 <strong>Offline HTML Dashboard Features</strong> (<code>--html-out pqc-report.html</code>)</summary>
+
+- 🌓 **Automatic Light & Dark Mode** (`prefers-color-scheme` + `light-dark()`).
+- 📈 **Executive PQC Readiness Score (`0–100`)** and KPI cards for CISOs & compliance audits.
+- 🔎 **Instant Client-Side Filtering** by Risk (`Critical`, `Warning`, `Info`), Quantum Threat (`Shor`, `Grover`, `None`), and free-text search.
+- 📜 **X.509 Certificate Inventory** table with expiry status, key size, signature hash, and SHA-256 fingerprint.
+- 🛠️ **Expandable Hybrid-PQC Remediation Snippets** per finding — 100% offline, zero external scripts.
+
+</details>
+
+<details>
 <summary>📋 <strong>Supported Languages, Libraries & PQC Rule Matrix (36 Built-in Rules)</strong></summary>
 
 | Language / Artifact | Libraries & Standards Covered | Quantum Threats Detected |
 | :--- | :--- | :--- |
-| **Python** (19 rules) | `cryptography`, `hashlib`, `PyCryptodome` (`Crypto.*`/`Cryptodome.*`), `ssl`, `rsa`, `ecdsa` | Shor (RSA, RSA `< 2048`, ECDSA/ECC, DSA, DH, Ed25519/X25519, TLS 1.0/1.1), Grover (3DES, DES, RC4, MD5, SHA-1, PBKDF2-SHA1), Safe (`AES-256-GCM`) |
-| **C / C++** (8 rules) | OpenSSL (`<openssl/evp.h>`, `<openssl/rsa.h>`, `<openssl/ec.h>`, `<openssl/des.h>`), `libsodium` (`<sodium.h>`) | Shor (`EVP_RSA_gen`, `RSA_generate_key_ex`, `EVP_EC_gen`, `EC_KEY_generate_key`, `crypto_box_keypair`, `crypto_sign_keypair`, `crypto_scalarmult`), Grover (`EVP_md5`, `EVP_sha1`, `EVP_des_ede3_cbc`, `EVP_rc4`), Safe (`EVP_aes_256_gcm`) |
-| **Go** (5 rules) | `crypto/rsa`, `crypto/ecdsa`, `crypto/ecdh`, `crypto/ed25519`, `crypto/md5`, `crypto/sha1`, `crypto/des`, `crypto/rc4` | Shor (RSA, ECDSA, ECDH, Ed25519), Grover (MD5, SHA-1, DES, 3DES, RC4) |
-| **JavaScript / TypeScript** (4 rules) | `node:crypto` / `crypto`, `jsonwebtoken` | Shor (`generateKeyPair`/`generateKeyPairSync` RSA/EC/DSA, JWT `RS256`/`ES256`/`PS256`), Grover (`createHash` MD5/SHA-1, `createCipheriv` DES/3DES/RC4) |
-| **X.509 Certificates** | `.pem`, `.crt`, `.cer`, `.der` via `cryptography.x509` | Shor (RSA, ECDSA, DSA, Ed25519, Ed448 public keys), Weak signature hashes (MD5, SHA-1), Expiration tracking |
+| 🐍 **Python** (19 rules) | `cryptography`, `hashlib`, `PyCryptodome` (`Crypto.*`/`Cryptodome.*`), `ssl`, `rsa`, `ecdsa` | Shor (RSA, RSA `< 2048`, ECDSA/ECC, DSA, DH, Ed25519/X25519, TLS 1.0/1.1), Grover (3DES, DES, RC4, MD5, SHA-1, PBKDF2-SHA1), Safe (`AES-256-GCM`) |
+| ⚙️ **C / C++** (8 rules) | OpenSSL (`<openssl/evp.h>`, `<openssl/rsa.h>`, `<openssl/ec.h>`, `<openssl/des.h>`), `libsodium` (`<sodium.h>`) | Shor (`EVP_RSA_gen`, `RSA_generate_key_ex`, `EVP_EC_gen`, `EC_KEY_generate_key`, `crypto_box_keypair`, `crypto_sign_keypair`, `crypto_scalarmult`), Grover (`EVP_md5`, `EVP_sha1`, `EVP_des_ede3_cbc`, `EVP_rc4`), Safe (`EVP_aes_256_gcm`) |
+| 🐹 **Go** (5 rules) | `crypto/rsa`, `crypto/ecdsa`, `crypto/ecdh`, `crypto/ed25519`, `crypto/md5`, `crypto/sha1`, `crypto/des`, `crypto/rc4` | Shor (RSA, ECDSA, ECDH, Ed25519), Grover (MD5, SHA-1, DES, 3DES, RC4) |
+| 🌐 **JavaScript / TypeScript** (4 rules) | `node:crypto` / `crypto`, `jsonwebtoken` | Shor (`generateKeyPair`/`generateKeyPairSync` RSA/EC/DSA, JWT `RS256`/`ES256`/`PS256`), Grover (`createHash` MD5/SHA-1, `createCipheriv` DES/3DES/RC4) |
+| 📜 **X.509 Certificates** | `.pem`, `.crt`, `.cer`, `.der` via `cryptography.x509` | Shor (RSA, ECDSA, DSA, Ed25519, Ed448 public keys), Weak signature hashes (MD5, SHA-1), Expiration tracking |
 
 </details>
 
@@ -169,21 +186,33 @@ jobs:
 
 ## 📚 Documentation
 
-- [User Manual](docs/USER_MANUAL.md)
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [Rule Authoring Guide](docs/RULE_AUTHORING_GUIDE.md)
-- [GitHub Action Guide](docs/GITHUB_ACTION_GUIDE.md)
-- [Implementation Plan](IMPLEMENTATION_PLAN.md)
-- [Changelog](CHANGELOG.md) | [Contributing](CONTRIBUTING.md) | [Security Policy](SECURITY.md)
+- 📖 [User Manual](docs/USER_MANUAL.md)
+- 🏗️ [Architecture Overview](docs/ARCHITECTURE.md)
+- ✍️ [Rule Authoring Guide](docs/RULE_AUTHORING_GUIDE.md)
+- 🤖 [GitHub Action Guide](docs/GITHUB_ACTION_GUIDE.md)
+- 🗺️ [Implementation Plan](IMPLEMENTATION_PLAN.md)
+- 📝 [Changelog](CHANGELOG.md) | 🤝 [Contributing](CONTRIBUTING.md) | 🔒 [Security Policy](SECURITY.md)
 
 ---
 
-## 🏆 Creators & Credits
+## 🏆 Credits & Acknowledgments
 
-`cbom-guard` is engineered and maintained by:
+`cbom-guard` is engineered and maintained with passion for post-quantum security:
 
-- **Organization:** [**Corax CoLAB**](https://coraxcolab.com) — *Deep Tech, Edge AI & Quantum Security Engineering*
-- **Lead Developer:** **Pelle Nyberg** ([GitHub: `@PelleNybe`](https://github.com/PelleNybe))
+- 🏢 **Organization:** [**Corax CoLAB**](https://coraxcolab.com) — *Deep Tech, Edge AI & Quantum Security Engineering*
+- 👨‍💻 **Lead Developer:** **Pelle** ([GitHub: `@PelleNybe`](https://github.com/PelleNybe))
+
+---
+
+## ☕ Support & Sponsor
+
+If `cbom-guard` helps your team inventory cryptographic assets or prepare for Post-Quantum Cryptography, consider supporting continued development:
+
+<div align="center">
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support%20Pelle-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/pellenybe)
+
+</div>
 
 ---
 
